@@ -7,6 +7,7 @@ import {
 import { DrawerLayoutAndroid } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { StackNavigator } from 'react-navigation';
+import styles from './Styles';
 
 class HomeScreen extends React.Component {
 
@@ -26,11 +27,11 @@ class HomeScreen extends React.Component {
         var navigationView = (
             <View style={{flex: 1, backgroundColor: '#fff'}}>
                 <Text style={{margin: 10, fontSize: 15, textAlign: 'left'}}>I'm in the Drawer!</Text>
-                <Icon.Button style={[styles.menuItem]} name="home" color='#455A64' backgroundColor="#fff" borderRadius={0}>
-                    <Text style={[styles.textItem]}>Home</Text>
+                <Icon.Button style={[styles.navigationMenuItem]} name="home" color='#455A64' backgroundColor="#fff" borderRadius={0}>
+                    <Text style={[styles.navitationtextItem]}>Home</Text>
                 </Icon.Button>
-                <Icon.Button style={[styles.menuItem]} name="book" onPress={() => navigate('Lessons')} color='#455A64' backgroundColor="#fff" borderRadius={0}>
-                    <Text style={[styles.textItem]}>Lessons</Text>
+                <Icon.Button style={[styles.navigationMenuItem]} name="book" onPress={() => navigate('Lessons')} color='#455A64' backgroundColor="#fff" borderRadius={0}>
+                    <Text style={[styles.navitationtextItem]}>Lessons</Text>
                 </Icon.Button>
             </View>
         );
@@ -49,26 +50,5 @@ class HomeScreen extends React.Component {
         );
     }
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F5FCFF',
-    },
-        menuItem: {
-        margin: 10,
-    },
-        textItem: {
-        fontSize: 14,
-        margin: 5,
-    },
-        instructions: {
-        textAlign: 'center',
-        color: '#333333',
-        marginBottom: 5,
-    },
-});
 
 module.exports = HomeScreen;

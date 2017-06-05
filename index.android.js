@@ -9,15 +9,18 @@ import {
     StyleSheet,
 } from 'react-native';
 import { StackNavigator } from 'react-navigation';
-var LessonsScreen = require('./LessonsScreen.js');
-var LessonScreen = require('./LessonScreen.js');
-var HomeScreen = require('./HomeScreen.js');
+let HomeScreen = require('./HomeScreen.js');
+let LessonsScreen = require('./LessonsScreen.js');
+let LessonScreen = require('./LessonScreen.js');
+let LessonVocabularyScreen = require('./LessonVocabularyScreen.js');
 
 const LangEasyApp = StackNavigator(
     {
-        Home: { screen: LessonScreen },
+        Home: { screen: HomeScreen },
         Lessons: { screen: LessonsScreen },
         Lesson: { screen: LessonScreen },
+        LessonVocabulary: { screen: LessonVocabularyScreen },
+        //LessonFindImage: { screen: LessonFindImageScreen },
     },
     {
         mode: 'modal',
