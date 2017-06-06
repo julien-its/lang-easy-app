@@ -51,11 +51,27 @@ module.exports = StyleSheet.create({
         borderColor: "#AAA",
         borderBottomWidth: 0.5
     },
+    gridColumnImageItem: {
+        flexDirection: 'column',
+        flex:1,
+        height: 170,
+        backgroundColor: "#FFF",
+        borderColor: "#AAA",
+        borderBottomWidth: 0.5
+    },
     gridRowButton:{
         padding: 20,
         flex:1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    gridRowImage:{
+        flex:1,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
     },
     gridRowButtonIcon:{
         color: "#333",
@@ -63,7 +79,7 @@ module.exports = StyleSheet.create({
     },
 
 
-    fullSlideWrapper: {
+    containerBoxed: {
         flex:1,
         backgroundColor: '#e9eaed',
         padding: 20,
@@ -73,16 +89,17 @@ module.exports = StyleSheet.create({
         marginBottom: 20,
     },
 
-    boxInner: {
-        backgroundColor: '#f6f7f8',
-        padding: 10,
-        marginBottom: 15,
-    },
     box: {
         backgroundColor: '#f6f7f8',
         marginBottom: 20,
         padding: 10,
     },
+    boxInner: {
+        backgroundColor: '#f6f7f8',
+        padding: 10,
+        marginBottom: 15,
+    },
+
 
     boxTitle: {
         fontSize: 20,

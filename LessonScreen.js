@@ -85,7 +85,7 @@ class LessonScreen extends React.Component {
                     </View>
                     <View style={styles.gridColumnItem}>
                         <TouchableHighlight
-                            onPress={() => navigate('LessonVocabulary', { id: params.id })}
+                            onPress={() => navigate('LessonFindImage', { id: params.id })}
                             underlayColor="white"
                             activeOpacity={0.7}
                             style={{ flex:1 }}

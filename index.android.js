@@ -13,14 +13,15 @@ let HomeScreen = require('./HomeScreen.js');
 let LessonsScreen = require('./LessonsScreen.js');
 let LessonScreen = require('./LessonScreen.js');
 let LessonVocabularyScreen = require('./LessonVocabularyScreen.js');
+let LessonFindImageScreen = require('./LessonFindImageScreen.js');
 
 const LangEasyApp = StackNavigator(
     {
-        Home: { screen: HomeScreen },
+        Home: { screen: LessonFindImageScreen },
         Lessons: { screen: LessonsScreen },
         Lesson: { screen: LessonScreen },
         LessonVocabulary: { screen: LessonVocabularyScreen },
-        //LessonFindImage: { screen: LessonFindImageScreen },
+        LessonFindImage: { screen: LessonFindImageScreen },
     },
     {
         mode: 'modal',

@@ -5,6 +5,7 @@ import {
     View,
     ListView,
     Alert,
+    Image,
     TouchableHighlight
 } from 'react-native';
 import Config from './Config';
@@ -12,7 +13,6 @@ import { DrawerLayoutAndroid } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { StackNavigator } from 'react-navigation';
 import * as Animatable from 'react-native-animatable';
-import Swiper from 'react-native-swiper';
 import styles from './Styles';
 
 let RNFS = require('react-native-fs');
@@ -39,7 +39,9 @@ class LessonFindImageScreen extends React.Component {
 
     static navigationView = null;
 
-    static navigationOptions = { 'header': null };
+    static navigationOptions = { 'title': 'Find Image' };
+
+
 
     constructor()
     {
@@ -51,7 +53,14 @@ class LessonFindImageScreen extends React.Component {
             lesson: null,
             loaded: false,
             soundState: 'waitingClick',
-            soundsState : []
+            currentSlide : null,
+        };
+        this.game = {
+            score: null,
+            vocabularies : [],
+            shownVocabularies : [],
+            currentVocabulary: null,
+            currentVocabularyIndex: null
         };
     }
 
@@ -63,28 +72,32 @@ class LessonFindImageScreen extends React.Component {
     fetchData()
     {
         const { params } = this.props.navigation.state;
-        var soundsState = [];
-        lessonUrl = Config.API_LESSON_URL.replace("{0}", params.id);
+        //lessonUrl = Config.API_LESSON_URL.replace("{0}", params.id);
+        lessonUrl = Config.API_LESSON_URL.replace("{0}", 3);
         fetch(lessonUrl)
             .then((response) => response.json())
             .then((responseData) => {
+                this.initGame(responseData.vocabularies);
 
-                for(i=0; i<responseData.vocabularies.length;i++){
-                    soundsState.push({
-                        soundState: 'waitingClick'
-                    });
-                }
-
-                this.setState({
-                    dataSource: this.state.dataSource.cloneWithRows(responseData.vocabularies),
-                    loaded: true,
-                    lesson: responseData,
-                    loadingSound: false,
-                    soundsState: soundsState
-                });
             })
             .done();
     };
+
+    // Initialize the game variables
+    initGame(vocabularies)
+    {
+        // Get vocabularies with photo
+        for(i=0; i<vocabularies.length; i++){
+            if(vocabularies[i].hasOwnProperty('photo') && vocabularies[i].photo != null){
+                this.game.vocabularies.push(vocabularies[i]);
+            }
+        }
+
+        this.setState({
+            loaded: true,
+            currentSlide : 1
+        });
+    }
 
     render()
     {
@@ -104,8 +117,27 @@ class LessonFindImageScreen extends React.Component {
         if (!this.state.loaded) {
             return this.renderLoadingView();
         }else{
-            return this.renderLoadedView();
+            return this.renderGameSlideView();
         }
+    }
+
+    randomIndex(min, max, excludes)
+    {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+
+        random = Math.floor(Math.random() * (max - min)) + min;
+        if(excludes != null){
+            if(excludes.constructor === Array){
+                if(excludes.indexOf(random) !== -1){
+                    return this.randomIndex(max, max, excludes);
+                }
+            }else if(random == excludes){
+                console.log("not array and exclude yes");
+                return this.randomIndex(max, max, excludes);
+            }
+        }
+        return random;
     }
 
     renderLoadingView()
@@ -125,139 +157,44 @@ class LessonFindImageScreen extends React.Component {
         );
     }
 
-    downloadFileAndPlay(indexVoc, indexExample)
+    setRandomVocabulary()
     {
-        this.setState({'soundState':'loading'});
-
-        let soundFile;
-        let soundPath;
-
-        if(indexExample == null){
-            soundFile = this.state.lesson.vocabularies[indexVoc].sound.filename;
-            soundPath = this.state.lesson.vocabularies[indexVoc].sound.path;
-        }else{
-            soundFile = this.state.lesson.vocabularies[indexVoc].examples[indexExample].sound.filename;
-            soundPath = this.state.lesson.vocabularies[indexVoc].examples[indexExample].sound.path;
-        }
-
-        const downloadDest = RNFS.DocumentDirectoryPath + '/' + soundFile;
-        const download = RNFS.downloadFile(
-            {
-                fromUrl: Config.API_DOMAIN+'/uploads/files'+soundPath+'/'+soundFile,
-                toFile: downloadDest
-            }
-        );
-        download.promise.then(resDownload => {
-            var whoosh = new Sound(downloadDest, '', (error) => {
-                if (error) {
-                    console.log('failed to load the sound', error);
-                    this.setState({'soundState':'waitingClick'});
-                    return;
-                }
-                // loaded successfully
-                console.log('duration in seconds: ' + whoosh.getDuration() + 'number of channels: ' + whoosh.getNumberOfChannels());
-                // Play the sound with an onEnd callback
-                this.setState({'soundState':'playing'});
-                whoosh.play((callBackPlay) => {
-                    if (callBackPlay == true) {
-                        console.log('successfully finished playing');
-                    } else {
-                        console.log('playback failed due to audio decoding errors');
-                    }
-                    this.setState({'soundState':'waitingClick'});
-                });
-            });
-        }).catch(err => {
-            this.setState({'soundState':'waitingClick'});
-            console.log("ErrorLoadingSound "+err);
-        });
+        this.game.currentVocabularyIndex = this.randomIndex(0, this.game.vocabularies.length-1, null);
+        this.game.currentVocabulary = this.game.vocabularies[this.game.currentVocabularyIndex];
     }
 
-    getVocabularySlides(vocabularies)
+    getRandomSlideVocabularies()
     {
-        return vocabularies.map(function(item, i){
+        // Create an array of random indexes from 0 to count existing vocabularies
+        // index can't be twice
+        // index can't be the selected vobabulary
+        let indexes = [];
+        let excludes = [this.game.currentVocabularyIndex];
+        for(i=0;i<3;i++){
+            index = this.randomIndex(0, this.game.vocabularies.length-1, excludes);
+            indexes.push(index);
+            excludes.push(index);
+        } 
 
-            let buttonText = "Listen";
-            if(this.state.soundState == 'loading'){
-                buttonText = 'Loading';
+        // Then generate an array of 4 elements with the selected vocabulary placed randomly
+        let randomVocabularyPosition = this.randomIndex(0, 3);
+        let randomSLideVocabularies = [];
+        for(i=0,index=0;i<=4;i++){
+            if(i==randomVocabularyPosition){
+                randomSLideVocabularies.push(this.game.currentVocabulary);
+            }else{
+                randomSLideVocabularies.push(this.game.vocabularies[indexes[index]]);
+                index++;
             }
-            if(this.state.soundState == 'playing'){
-                buttonText = 'Playing';
-            }
-
-            let examples = null;
-            if(item.hasOwnProperty('examples')){
-                examples = this.getExamplesBlocks(item.examples, i);
-            }
-
-            let getListenButton = i => {
-                if(item.sound == null) return null;
-                return (<ButtonListen onPress={() => this.downloadFileAndPlay(i, null) } text={buttonText} disabled={buttonText != "Listen"} />);
-            };
-
-            return (
-                <View style={styles.fullSlideWrapper} key={i}>
-                    <View style={styles.box}>
-                        <Text style={styles.boxTextTitle}>{item.word}</Text>
-                        <Text style={styles.boxText}>{item.translation}</Text>
-                        <Text style={styles.boxText}>{item.phonetic}</Text>
-                    </View>
-                    { getListenButton(i) }
-                    { examples }
-                </View>
-            )
-        }, this);
+        }
+        return randomSLideVocabularies;
     }
 
-    getExamplesBlocks(examples, indexVoc)
+    renderGameSlideView()
     {
-        let buttonText = "Listen";
-        if(this.state.soundState == 'loading'){
-            buttonText = 'Loading';
-        }
-        if(this.state.soundState == 'playing'){
-            buttonText = 'Playing';
-        }
+        this.setRandomVocabulary();
 
-        if(examples.length == 0){
-            return null;
-        }
-
-        let exampleSoundJsx = (example, indexVoc, j) => {
-            if(example.hasOwnProperty('sound') && example.sound != null){
-                return(
-                    <View style={ {marginBottom:15} }>
-                        <ButtonListen onPress={() => this.downloadFileAndPlay(indexVoc, j) } text={buttonText} disabled={buttonText != "Listen"}  />
-                    </View>
-                );
-            }
-            return(null);
-        }
-
-        let blocks = examples.map(function(example, j){
-            return(
-                <View key={"voc-"+indexVoc+"-example-"+j}>
-                    <View style={styles.boxInner}>
-                        <Text style={styles.text}>{example.sentence}</Text>
-                        <Text style={styles.text}>{example.translation}</Text>
-                        <Text style={styles.text}>{example.phonetic}</Text>
-                    </View>
-                    { exampleSoundJsx(example, indexVoc, j) }
-                </View>
-            )
-        }, this);
-
-        return (
-            <View style={styles.fullSlideBlocWrapper}>
-                <Text style={styles.textTitle}>{ blocks.length == 1 ? "Example" : "Examples" }</Text>
-                { blocks }
-            </View>
-        );
-    }
-
-    renderLoadedView()
-    {
-        let slidesList = this.getVocabularySlides(this.state.lesson.vocabularies);
+        const slideVocabularies = this.getRandomSlideVocabularies();
         return (
             <DrawerLayoutAndroid
                 ref={'DRAWER_REF'}
@@ -265,24 +202,76 @@ class LessonFindImageScreen extends React.Component {
                 drawerPosition={DrawerLayoutAndroid.positions.Left}
                 renderNavigationView={() => this.navigationView}>
                 <View style={styles.containerFull}>
-                    <Swiper showsButtons={true} showsPagination={true}>
-                        { slidesList }
-                    </Swiper>
+                    <View style={styles.containerBoxed}>
+                        <View>
+                            <View style={styles.gridRow}>
+                                <View style={[styles.gridColumnImageItem, { borderRightWidth: 0.5 }]}>
+                                    <TouchableHighlight
+                                        onPress={() => Alert.alert("1")}
+                                        underlayColor="white"
+                                        activeOpacity={0.7}
+                                        style={{ flex:1 }}
+                                        >
+                                            <View style={styles.gridRowImage}>
+                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[0].photo.path+'/'+slideVocabularies[0].photo.filename,} } />
+                                            </View>
+                                    </TouchableHighlight>
+                                </View>
+                                <View style={[styles.gridColumnImageItem]}>
+                                    <TouchableHighlight
+                                        onPress={() => Alert.alert("2")}
+                                        underlayColor="white"
+                                        activeOpacity={0.7}
+                                        style={{ flex:1 }}
+                                        >
+                                            <View style={styles.gridRowImage}>
+                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[1].photo.path+'/'+slideVocabularies[1].photo.filename,} } />
+                                            </View>
+                                    </TouchableHighlight>
+                                </View>
+                            </View>
+
+                            <View style={styles.gridRow}>
+                                <View style={[styles.gridColumnImageItem, { borderRightWidth: 0.5 }]}>
+                                    <TouchableHighlight
+                                        onPress={() => Alert.alert("3")}
+                                        underlayColor="white"
+                                        activeOpacity={0.7}
+                                        style={{ flex:1 }}
+                                        >
+                                            <View style={styles.gridRowImage}>
+                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[2].photo.path+'/'+slideVocabularies[2].photo.filename,} } />
+                                            </View>
+                                    </TouchableHighlight>
+                                </View>
+                                <View style={[styles.gridColumnImageItem]}>
+                                    <TouchableHighlight
+                                        onPress={() => Alert.alert("4")}
+                                        underlayColor="white"
+                                        activeOpacity={0.7}
+                                        style={{ flex:1 }}
+                                        >
+                                            <View style={styles.gridRowImage}>
+                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[3].photo.path+'/'+slideVocabularies[3].photo.filename,} } />
+                                            </View>
+                                    </TouchableHighlight>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={{ alignItems: "center", padding:30 }}>
+                            <Text style={[styles.boxTextTitle]}>{this.game.currentVocabulary.word}</Text>
+                        </View>
+                    </View>
+
+
+
               </View>
             </DrawerLayoutAndroid>
         );
     }
 
-    renderVocabulary(item)
-    {
-        return (
-            <View>
-                <View style={{ flex:1 }}>
-                    <Text style={styles.boxTitle}>{item.word} {item.translation}</Text>
-                </View>
-            </View>
-        );
-    };
+
 }
 
 module.exports = LessonFindImageScreen;

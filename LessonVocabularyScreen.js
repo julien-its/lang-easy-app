@@ -196,7 +196,7 @@ class LessonVocabularyScreen extends React.Component {
             };
 
             return (
-                <View style={styles.fullSlideWrapper} key={i}>
+                <View style={styles.containerBoxed} key={i}>
                     <View style={styles.box}>
                         <Text style={styles.boxTextTitle}>{item.word}</Text>
                         <Text style={styles.boxText}>{item.translation}</Text>
@@ -272,17 +272,6 @@ class LessonVocabularyScreen extends React.Component {
             </DrawerLayoutAndroid>
         );
     }
-
-    renderVocabulary(item)
-    {
-        return (
-            <View>
-                <View style={{ flex:1 }}>
-                    <Text style={styles.boxTitle}>{item.word} {item.translation}</Text>
-                </View>
-            </View>
-        );
-    };
 }
 
 module.exports = LessonVocabularyScreen;
