@@ -60,7 +60,8 @@ class LessonFindImageScreen extends React.Component {
             vocabularies : [],
             shownVocabularies : [],
             currentVocabulary: null,
-            currentVocabularyIndex: null
+            currentVocabularyIndex: null,
+            slideVocabularies: null
         };
     }
 
@@ -125,8 +126,8 @@ class LessonFindImageScreen extends React.Component {
     {
         min = Math.ceil(min);
         max = Math.floor(max);
-
         random = Math.floor(Math.random() * (max - min)) + min;
+
         if(excludes != null){
             if(excludes.constructor === Array){
                 if(excludes.indexOf(random) !== -1){
@@ -163,7 +164,7 @@ class LessonFindImageScreen extends React.Component {
         this.game.currentVocabulary = this.game.vocabularies[this.game.currentVocabularyIndex];
     }
 
-    getRandomSlideVocabularies()
+    setRandomSlideVocabularies()
     {
         // Create an array of random indexes from 0 to count existing vocabularies
         // index can't be twice
@@ -174,27 +175,27 @@ class LessonFindImageScreen extends React.Component {
             index = this.randomIndex(0, this.game.vocabularies.length-1, excludes);
             indexes.push(index);
             excludes.push(index);
-        } 
+        }
 
         // Then generate an array of 4 elements with the selected vocabulary placed randomly
-        let randomVocabularyPosition = this.randomIndex(0, 3);
-        let randomSLideVocabularies = [];
+        let randomVocabularyPosition = this.randomIndex(0, 4);
+        let randomSlideVocabularies = [];
         for(i=0,index=0;i<=4;i++){
             if(i==randomVocabularyPosition){
-                randomSLideVocabularies.push(this.game.currentVocabulary);
+                randomSlideVocabularies.push(this.game.currentVocabulary);
             }else{
-                randomSLideVocabularies.push(this.game.vocabularies[indexes[index]]);
+                randomSlideVocabularies.push(this.game.vocabularies[indexes[index]]);
                 index++;
             }
         }
-        return randomSLideVocabularies;
+        this.game.slideVocabularies = randomSlideVocabularies;
     }
 
     renderGameSlideView()
     {
         this.setRandomVocabulary();
+        this.setRandomSlideVocabularies();
 
-        const slideVocabularies = this.getRandomSlideVocabularies();
         return (
             <DrawerLayoutAndroid
                 ref={'DRAWER_REF'}
@@ -205,57 +206,13 @@ class LessonFindImageScreen extends React.Component {
                     <View style={styles.containerBoxed}>
                         <View>
                             <View style={styles.gridRow}>
-                                <View style={[styles.gridColumnImageItem, { borderRightWidth: 0.5 }]}>
-                                    <TouchableHighlight
-                                        onPress={() => Alert.alert("1")}
-                                        underlayColor="white"
-                                        activeOpacity={0.7}
-                                        style={{ flex:1 }}
-                                        >
-                                            <View style={styles.gridRowImage}>
-                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[0].photo.path+'/'+slideVocabularies[0].photo.filename,} } />
-                                            </View>
-                                    </TouchableHighlight>
-                                </View>
-                                <View style={[styles.gridColumnImageItem]}>
-                                    <TouchableHighlight
-                                        onPress={() => Alert.alert("2")}
-                                        underlayColor="white"
-                                        activeOpacity={0.7}
-                                        style={{ flex:1 }}
-                                        >
-                                            <View style={styles.gridRowImage}>
-                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[1].photo.path+'/'+slideVocabularies[1].photo.filename,} } />
-                                            </View>
-                                    </TouchableHighlight>
-                                </View>
+                                { this.getColumnImageItem(0) }
+                                { this.getColumnImageItem(1) }
                             </View>
 
                             <View style={styles.gridRow}>
-                                <View style={[styles.gridColumnImageItem, { borderRightWidth: 0.5 }]}>
-                                    <TouchableHighlight
-                                        onPress={() => Alert.alert("3")}
-                                        underlayColor="white"
-                                        activeOpacity={0.7}
-                                        style={{ flex:1 }}
-                                        >
-                                            <View style={styles.gridRowImage}>
-                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[2].photo.path+'/'+slideVocabularies[2].photo.filename,} } />
-                                            </View>
-                                    </TouchableHighlight>
-                                </View>
-                                <View style={[styles.gridColumnImageItem]}>
-                                    <TouchableHighlight
-                                        onPress={() => Alert.alert("4")}
-                                        underlayColor="white"
-                                        activeOpacity={0.7}
-                                        style={{ flex:1 }}
-                                        >
-                                            <View style={styles.gridRowImage}>
-                                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+slideVocabularies[3].photo.path+'/'+slideVocabularies[3].photo.filename,} } />
-                                            </View>
-                                    </TouchableHighlight>
-                                </View>
+                                { this.getColumnImageItem(2) }
+                                { this.getColumnImageItem(3) }
                             </View>
                         </View>
 
@@ -271,7 +228,23 @@ class LessonFindImageScreen extends React.Component {
         );
     }
 
-
+    getColumnImageItem(index)
+    {
+        return(
+            <View style={[styles.gridColumnImageItem, { borderRightWidth: (index == 0 || index == 2) ? 0.5 : 0 }]}>
+                <TouchableHighlight
+                    onPress={() => Alert.alert(this.game.slideVocabularies[index].word)}
+                    underlayColor="white"
+                    activeOpacity={0.7}
+                    style={{ flex:1 }}
+                    >
+                        <View style={styles.gridRowImage}>
+                            <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+this.game.slideVocabularies[index].photo.path+'/'+this.game.slideVocabularies[index].photo.filename,} } />
+                        </View>
+                </TouchableHighlight>
+            </View>
+        )
+    }
 }
 
 module.exports = LessonFindImageScreen;
