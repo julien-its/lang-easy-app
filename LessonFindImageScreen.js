@@ -41,27 +41,30 @@ class LessonFindImageScreen extends React.Component {
 
     static navigationOptions = { 'title': 'Find Image' };
 
-
-
     constructor()
     {
         super();
         const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+
         this.state = {
             currentView: 'lessonVocabulary',
             dataSource: ds.cloneWithRows([]),
             lesson: null,
             loaded: false,
-            soundState: 'waitingClick',
             currentSlide : null,
+            endGame: false,
+            clickedIndexes: [false, false, false, false],
         };
         this.game = {
             score: null,
+            allVocabularies: [],
             vocabularies : [],
-            shownVocabularies : [],
+            playedVocabularies : [],
+            unplayedVocabularies: [],
             currentVocabulary: null,
             currentVocabularyIndex: null,
-            slideVocabularies: null
+            slideVocabularies: null,
+            errorCount: 0,
         };
     }
 
@@ -73,8 +76,8 @@ class LessonFindImageScreen extends React.Component {
     fetchData()
     {
         const { params } = this.props.navigation.state;
-        //lessonUrl = Config.API_LESSON_URL.replace("{0}", params.id);
-        lessonUrl = Config.API_LESSON_URL.replace("{0}", 3);
+        lessonUrl = Config.API_LESSON_URL.replace("{0}", params.id);
+        //lessonUrl = Config.API_LESSON_URL.replace("{0}", 3);
         fetch(lessonUrl)
             .then((response) => response.json())
             .then((responseData) => {
@@ -91,13 +94,41 @@ class LessonFindImageScreen extends React.Component {
         for(i=0; i<vocabularies.length; i++){
             if(vocabularies[i].hasOwnProperty('photo') && vocabularies[i].photo != null){
                 this.game.vocabularies.push(vocabularies[i]);
+                this.game.allVocabularies.push(vocabularies[i]);
+                this.game.unplayedVocabularies.push(vocabularies[i]);
             }
         }
 
+        this.setGameSlide();
         this.setState({
             loaded: true,
-            currentSlide : 1
+            currentSlide : 1,
+            clickedIndexes: [false, false, false, false]
         });
+    }
+
+    replay()
+    {
+        this.game = {
+            score: null,
+            allVocabularies : this.game.allVocabularies.slice(0),
+            vocabularies : this.game.allVocabularies.slice(0),
+            playedVocabularies : [],
+            unplayedVocabularies: this.game.allVocabularies.slice(0),
+            currentVocabulary: null,
+            currentVocabularyIndex: null,
+            slideVocabularies: null,
+            errorCount: 0,
+            currentSlide:1,
+            clickedIndexes: [false, false, false, false]
+        };
+        this.setGameSlide();
+        this.setState({
+            currentSlide : 1,
+            endGame: false,
+            clickedIndexes: [false, false, false, false]
+        });
+
     }
 
     render()
@@ -117,6 +148,8 @@ class LessonFindImageScreen extends React.Component {
 
         if (!this.state.loaded) {
             return this.renderLoadingView();
+        }else if(this.state.endGame){
+            return this.renderEndGame();
         }else{
             return this.renderGameSlideView();
         }
@@ -160,41 +193,66 @@ class LessonFindImageScreen extends React.Component {
 
     setRandomVocabulary()
     {
-        this.game.currentVocabularyIndex = this.randomIndex(0, this.game.vocabularies.length-1, null);
-        this.game.currentVocabulary = this.game.vocabularies[this.game.currentVocabularyIndex];
+        randomIndex = this.randomIndex(0, this.game.unplayedVocabularies.length-1, null);
+        this.game.currentVocabulary = this.game.unplayedVocabularies[randomIndex];
+
+        // Remove the vocabulary from unplayedVocabularies
+        this.game.unplayedVocabularies.splice(randomIndex, 1);
+
+        // Add this currentVocabulary to playedVocabularies
+        this.game.playedVocabularies.push(this.game.currentVocabulary);
     }
 
     setRandomSlideVocabularies()
     {
-        // Create an array of random indexes from 0 to count existing vocabularies
-        // index can't be twice
-        // index can't be the selected vobabulary
-        let indexes = [];
-        let excludes = [this.game.currentVocabularyIndex];
-        for(i=0;i<3;i++){
-            index = this.randomIndex(0, this.game.vocabularies.length-1, excludes);
-            indexes.push(index);
-            excludes.push(index);
+        let vocabulariesToShowInSlide = this.game.vocabularies.slice(0);
+        // Remove currentVocabulary
+        for(i=0; i<vocabulariesToShowInSlide.length; i++){
+            if(vocabulariesToShowInSlide[i].id == this.game.currentVocabulary.id){
+                vocabulariesToShowInSlide.splice(i, 1);
+            }
         }
 
         // Then generate an array of 4 elements with the selected vocabulary placed randomly
-        let randomVocabularyPosition = this.randomIndex(0, 4);
+        let randomVocabularyPosition = this.randomIndex(0, 3);
         let randomSlideVocabularies = [];
-        for(i=0,index=0;i<=4;i++){
+        for(i=0;i<=3;i++){
             if(i==randomVocabularyPosition){
                 randomSlideVocabularies.push(this.game.currentVocabulary);
             }else{
-                randomSlideVocabularies.push(this.game.vocabularies[indexes[index]]);
-                index++;
+                let index = this.randomIndex(0, vocabulariesToShowInSlide.length-1, null);
+                randomSlideVocabularies.push(vocabulariesToShowInSlide[index]);
+                vocabulariesToShowInSlide.splice(index, 1);
             }
         }
+
         this.game.slideVocabularies = randomSlideVocabularies;
+    }
+
+    setGameSlide()
+    {
+        this.setRandomVocabulary();
+        this.setRandomSlideVocabularies();
+    }
+
+    nextSlide()
+    {
+        if(this.game.unplayedVocabularies.length == 0){
+            this.setState({
+                endGame: true
+            });
+        }else{
+            this.setGameSlide();
+            this.setState({
+                currentSlide: this.state.currentSlide++,
+                clickedIndexes: [false, false, false, false]
+            });
+        }
+
     }
 
     renderGameSlideView()
     {
-        this.setRandomVocabulary();
-        this.setRandomSlideVocabularies();
 
         return (
             <DrawerLayoutAndroid
@@ -209,20 +267,58 @@ class LessonFindImageScreen extends React.Component {
                                 { this.getColumnImageItem(0) }
                                 { this.getColumnImageItem(1) }
                             </View>
-
                             <View style={styles.gridRow}>
                                 { this.getColumnImageItem(2) }
                                 { this.getColumnImageItem(3) }
                             </View>
                         </View>
-
                         <View style={{ alignItems: "center", padding:30 }}>
                             <Text style={[styles.boxTextTitle]}>{this.game.currentVocabulary.word}</Text>
                         </View>
                     </View>
+              </View>
+            </DrawerLayoutAndroid>
+        );
+    }
 
-
-
+    renderEndGame()
+    {
+        let score = this.getScore();
+        const { navigate } = this.props.navigation;
+        return (
+            <DrawerLayoutAndroid
+                ref={'DRAWER_REF'}
+                drawerWidth={300}
+                drawerPosition={DrawerLayoutAndroid.positions.Left}
+                renderNavigationView={() => this.navigationView}>
+                <View style={styles.containerLoader}>
+                    <Text style={ styles.boxTitle }>Your score: { score }%</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <View style={{ flexDirection: 'column', flex:1, margin:10, }}>
+                            <TouchableHighlight
+                                onPress={() => { this.replay(); }}
+                                underlayColor="white"
+                                activeOpacity={0.7}
+                                disabled={this.props.disabled}
+                                >
+                                <View style={ styles.buttonFullWidth }>
+                                    <Text style={styles.buttonText}>Replay</Text>
+                                </View>
+                            </TouchableHighlight>
+                        </View>
+                        <View style={{ flexDirection: 'column', flex:1, margin:10, }}>
+                            <TouchableHighlight
+                                onPress={() => navigate('Lesson', { id : this.state.lesson.id, title: this.state.lesson.title }) }
+                                underlayColor="white"
+                                activeOpacity={0.7}
+                                disabled={this.props.disabled}
+                                >
+                                <View style={ styles.buttonFullWidth }>
+                                    <Text style={styles.buttonText}>Back to lesson</Text>
+                                </View>
+                            </TouchableHighlight>
+                        </View>
+                    </View>
               </View>
             </DrawerLayoutAndroid>
         );
@@ -230,21 +326,73 @@ class LessonFindImageScreen extends React.Component {
 
     getColumnImageItem(index)
     {
-        return(
-            <View style={[styles.gridColumnImageItem, { borderRightWidth: (index == 0 || index == 2) ? 0.5 : 0 }]}>
-                <TouchableHighlight
-                    onPress={() => Alert.alert(this.game.slideVocabularies[index].word)}
-                    underlayColor="white"
-                    activeOpacity={0.7}
-                    style={{ flex:1 }}
-                    >
-                        <View style={styles.gridRowImage}>
-                            <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+this.game.slideVocabularies[index].photo.path+'/'+this.game.slideVocabularies[index].photo.filename,} } />
+        let vocabulary = this.game.slideVocabularies[index];
+        if(this.state.clickedIndexes[index] == true){
+            if(vocabulary.id == this.game.currentVocabulary.id){
+                // Set a timer to play next slide if good answer
+                setTimeout(
+                    () => { this.nextSlide(); },
+                    800
+                );
+                // Dislay green overlayer (good answer)
+                return(
+                    <View style={[styles.gridColumnImageItem, { borderRightWidth: (index == 0 || index == 2) ? 0.5 : 0 }]}>
+                        <View style={[styles.gridRowImage, {backgroundColor:'#178c3a', flex:1}]}>
+                            <Image style={{flex:1, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.7}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+vocabulary.photo.path+'/'+vocabulary.photo.filename,} } />
                         </View>
-                </TouchableHighlight>
-            </View>
-        )
+                    </View>
+                )
+            }else{
+                // Display red overlayer (wrong answer)
+                return(
+                    <View style={[styles.gridColumnImageItem, { borderRightWidth: (index == 0 || index == 2) ? 0.5 : 0 }]}>
+                        <View style={[styles.gridRowImage, {backgroundColor:'#FF0000', flex:1}]}>
+                            <Image style={{flex:1, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.7}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+vocabulary.photo.path+'/'+vocabulary.photo.filename,} } />
+                        </View>
+                    </View>
+                )
+            }
+
+        }else{
+            // Display not answered, just image cell
+            return(
+                <View style={[styles.gridColumnImageItem, { borderRightWidth: (index == 0 || index == 2) ? 0.5 : 0 }]}>
+                    <TouchableHighlight
+                        onPress={() => this.checkSlideResult(vocabulary, index)}
+                        underlayColor="white"
+                        activeOpacity={0.7}
+                        style={{ flex:1 }}
+                        >
+                            <View style={styles.gridRowImage}>
+                                <Image style={{flex:1}} source={ { uri: Config.API_DOMAIN+'/uploads/photos'+vocabulary.photo.path+'/'+vocabulary.photo.filename,} } />
+                            </View>
+                    </TouchableHighlight>
+                </View>
+            )
+        }
     }
+
+    checkSlideResult(vocabulary, index)
+    {
+        let clickedIndexes = this.state.clickedIndexes;
+        clickedIndexes[index] = true;
+        if(vocabulary.id == this.game.currentVocabulary.id){
+            this.setState({ clickedIndexes: clickedIndexes });
+        }else{
+            this.game.errorCount ++;
+            this.setState({ clickedIndexes: clickedIndexes });
+        }
+    }
+
+    getScore()
+    {
+        let errorValue = 100 / this.game.vocabularies.length;
+        let result = 100 - (errorValue * this.game.errorCount);
+        result = Math.round(result);
+        return result < 0 ? 0 : result;
+    }
+
+
 }
 
 module.exports = LessonFindImageScreen;
