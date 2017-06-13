@@ -17,11 +17,11 @@ import * as Animatable from 'react-native-animatable';
 import styles from './Styles';
 import shuffle from 'shuffle-array';
 
-class LessonMappingScreen extends React.Component {
+class LessonMatchingScreen extends React.Component {
 
     static navigationView = null;
 
-    static navigationOptions = { 'title': 'Mapping' };
+    static navigationOptions = { 'title': 'Matching' };
 
     constructor()
     {
@@ -31,7 +31,6 @@ class LessonMappingScreen extends React.Component {
         this.state = {
             currentView: 'lessonVocabulary',
             dataSource: ds.cloneWithRows([]),
-
             loaded: false,
             currentSlide : null,
             endGame: false,
@@ -163,7 +162,7 @@ class LessonMappingScreen extends React.Component {
                         </View>
                         <View style={{ flexDirection: 'column', flex:1, margin:10, }}>
                             <TouchableHighlight
-                                onPress={() => navigate('Lesson', { id : this.state.lesson.id, title: this.state.lesson.title }) }
+                                onPress={() => navigate('Lesson', { id : this.lesson.id, title: this.lesson.title }) }
                                 underlayColor="white"
                                 activeOpacity={0.7}
                                 disabled={this.props.disabled}
@@ -280,7 +279,7 @@ class LessonMappingScreen extends React.Component {
             // Clicked on word
             if(this.state.clickedTranslation != null){
                 if(this.game.viewWords[index].id == this.game.viewTranslations[this.state.clickedTranslation].id){
-                    setTimeout(() => { this.setMatch(); }, 500);
+                    setTimeout(() => { this.setMatch(); }, 300);
                     this.game.locked = true;
                     this.setState({clickedWord: index, successMatching:true});
                 }else{
@@ -296,7 +295,7 @@ class LessonMappingScreen extends React.Component {
             if(this.state.clickedWord != null){
                 // If two sides clicked, apply succes or error with timeout
                 if(this.game.viewTranslations[index].id == this.game.viewWords[this.state.clickedWord].id){
-                    setTimeout(() => { this.setMatch(); }, 500);
+                    setTimeout(() => { this.setMatch(); }, 300);
                     this.game.locked = true;
                     this.setState({clickedTranslation: index, successMatching:true});
                 }else{
@@ -345,4 +344,4 @@ class LessonMappingScreen extends React.Component {
     }
 }
 
-module.exports = LessonMappingScreen;
+module.exports = LessonMatchingScreen;

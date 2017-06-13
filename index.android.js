@@ -14,16 +14,16 @@ let LessonsScreen = require('./LessonsScreen.js');
 let LessonScreen = require('./LessonScreen.js');
 let LessonVocabularyScreen = require('./LessonVocabularyScreen.js');
 let LessonFindImageScreen = require('./LessonFindImageScreen.js');
-let LessonMappingScreen = require('./LessonMappingScreen.js');
+let LessonMatchingScreen = require('./LessonMatchingScreen.js');
 
 const LangEasyApp = StackNavigator(
     {
-        Home: { screen: LessonMappingScreen },
+        Home: { screen: LessonsScreen },
         Lessons: { screen: LessonsScreen },
         Lesson: { screen: LessonScreen },
         LessonVocabulary: { screen: LessonVocabularyScreen },
         LessonFindImage: { screen: LessonFindImageScreen },
-        LessonMapping: { screen: LessonMappingScreen },
+        LessonMatching: { screen: LessonMatchingScreen },
     },
     {
         mode: 'modal',

@@ -31,7 +31,6 @@ class LessonScreen extends React.Component {
             loaded: false,
             title: 'test'
         };
-
     }
 
     render()
@@ -130,14 +129,14 @@ class LessonScreen extends React.Component {
                 <View style={styles.gridRow}>
                     <View style={[styles.gridColumnItem, {borderRightWidth: 0.5 }]}>
                         <TouchableHighlight
-                            onPress={() => navigate('LessonVocabulary', { id: params.id })}
+                            onPress={() => navigate('LessonMatching', { id: params.id })}
                             underlayColor="white"
                             activeOpacity={0.7}
                             style={{ flex:1 }}
                             >
                             <View style={styles.gridRowButton}>
                                 <Icon style={styles.gridRowButtonIcon} name="puzzle-piece" color='#455A64' backgroundColor="#fff" />
-                                <Text>Mapping</Text>
+                                <Text>Matching</Text>
                             </View>
                         </TouchableHighlight>
                     </View>

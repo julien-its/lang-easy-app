@@ -49,12 +49,12 @@ class LessonFindImageScreen extends React.Component {
         this.state = {
             currentView: 'lessonVocabulary',
             dataSource: ds.cloneWithRows([]),
-            lesson: null,
             loaded: false,
             currentSlide : null,
             endGame: false,
             clickedIndexes: [false, false, false, false],
         };
+        this.lesson = null;
         this.game = {
             score: null,
             allVocabularies: [],
@@ -81,8 +81,8 @@ class LessonFindImageScreen extends React.Component {
         fetch(lessonUrl)
             .then((response) => response.json())
             .then((responseData) => {
+                this.lesson = responseData;
                 this.initGame(responseData.vocabularies);
-
             })
             .done();
     };
@@ -308,7 +308,7 @@ class LessonFindImageScreen extends React.Component {
                         </View>
                         <View style={{ flexDirection: 'column', flex:1, margin:10, }}>
                             <TouchableHighlight
-                                onPress={() => navigate('Lesson', { id : this.state.lesson.id, title: this.state.lesson.title }) }
+                                onPress={() => navigate('Lesson', { id : this.lesson.id, title: this.lesson.title }) }
                                 underlayColor="white"
                                 activeOpacity={0.7}
                                 disabled={this.props.disabled}
