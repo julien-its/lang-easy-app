@@ -6,7 +6,8 @@ import {
     ListView,
     Alert,
     Image,
-    TouchableHighlight
+    TouchableHighlight,
+    ScrollView
 } from 'react-native';
 import Config from './Config';
 import { DrawerLayoutAndroid } from 'react-native';
@@ -14,6 +15,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { StackNavigator } from 'react-navigation';
 import * as Animatable from 'react-native-animatable';
 import styles from './Styles';
+import shuffle from 'shuffle-array';
 
 class LessonMappingScreen extends React.Component {
 
@@ -33,21 +35,20 @@ class LessonMappingScreen extends React.Component {
             loaded: false,
             currentSlide : null,
             endGame: false,
-            clickedIndexes: [false, false, false, false],
+            clickedWord: null,
+            clickedTranslation: null,
+            errorMatching: false,
+            successMatching: false
         };
         this.lesson = null;
         this.game = {
             score: null,
             vocabularies : [],
-            playedVocabularies : [],
-            unplayedVocabularies: [],
-            currentVocabulary: null,
-            currentVocabularyIndex: null,
-            slideVocabularies: null,
             errorCount: 0,
             viewVocabularies:[],
             viewWords:[],
-            viewTranslations:[]
+            viewTranslations:[],
+            locked: false
         };
     }
 
@@ -72,29 +73,26 @@ class LessonMappingScreen extends React.Component {
 
     setViewVocabularies()
     {
-        // Set random 6 vocabulary to show
-        for(i=0; i<6; i++){
-            this.game.viewVocabularies.push(this.game.unplayedVocabularies[i]);
-        }
+        this.game.viewWords = this.game.vocabularies.slice(0);
+        this.game.viewTranslations = this.game.vocabularies.slice(0);
 
-        // Split this 6 vocabulary in two rows and mixed them
-        for(i=0; i<this.game.viewVocabularies.length; i++){
-            this.game.viewWords.push(this.game.viewVocabularies[i]);
-        }
-        for(i=0; i<this.game.viewVocabularies.length; i++){
-            this.game.viewTranslations.push(this.game.viewVocabularies[i]);
-        }
+        shuffle(this.game.viewWords);
+        shuffle(this.game.viewTranslations);
     }
 
     // Initialize the game variables
     initGame(vocabularies)
     {
         this.game.vocabularies = vocabularies;
-        this.game.unplayedVocabularies = vocabularies;
         this.setViewVocabularies();
         this.setState({
             loaded: true,
         });
+    }
+
+    replay()
+    {
+
     }
 
     render()
@@ -121,25 +119,6 @@ class LessonMappingScreen extends React.Component {
         }
     }
 
-    randomIndex(min, max, excludes)
-    {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        random = Math.floor(Math.random() * (max - min)) + min;
-
-        if(excludes != null){
-            if(excludes.constructor === Array){
-                if(excludes.indexOf(random) !== -1){
-                    return this.randomIndex(max, max, excludes);
-                }
-            }else if(random == excludes){
-                console.log("not array and exclude yes");
-                return this.randomIndex(max, max, excludes);
-            }
-        }
-        return random;
-    }
-
     renderLoadingView()
     {
         return (
@@ -157,46 +136,182 @@ class LessonMappingScreen extends React.Component {
         );
     }
 
-    getRowsItems()
+    renderEndGame()
     {
-        let rows = [];
-        for(i=0; i<this.game.viewWords.length; i++){
-            rows.push(this.getRowItems(i));
-        } 
-        return rows;
+        let score = this.getScore();
+        const { navigate } = this.props.navigation;
+        return (
+            <DrawerLayoutAndroid
+                ref={'DRAWER_REF'}
+                drawerWidth={300}
+                drawerPosition={DrawerLayoutAndroid.positions.Left}
+                renderNavigationView={() => this.navigationView}>
+                <View style={styles.containerLoader}>
+                    <Text style={ styles.boxTitle }>Your score: { score }%</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <View style={{ flexDirection: 'column', flex:1, margin:10, }}>
+                            <TouchableHighlight
+                                onPress={() => { this.replay(); }}
+                                underlayColor="white"
+                                activeOpacity={0.7}
+                                disabled={this.props.disabled}
+                                >
+                                <View style={ styles.buttonFullWidth }>
+                                    <Text style={styles.buttonText}>Replay</Text>
+                                </View>
+                            </TouchableHighlight>
+                        </View>
+                        <View style={{ flexDirection: 'column', flex:1, margin:10, }}>
+                            <TouchableHighlight
+                                onPress={() => navigate('Lesson', { id : this.state.lesson.id, title: this.state.lesson.title }) }
+                                underlayColor="white"
+                                activeOpacity={0.7}
+                                disabled={this.props.disabled}
+                                >
+                                <View style={ styles.buttonFullWidth }>
+                                    <Text style={styles.buttonText}>Back to lesson</Text>
+                                </View>
+                            </TouchableHighlight>
+                        </View>
+                    </View>
+              </View>
+            </DrawerLayoutAndroid>
+        );
     }
 
-    getRowItems()
+    getColItems(type)
     {
+        let items = [];
+        for(i=0; i<this.game.viewWords.length; i++){
+            items.push(this.getColItem(i, type));
+        }
+        return items;
+    }
+
+    getColItem(index, type)
+    {
+        let text = null;
+        let vocabulary = null;
+        let clicked = false;
+        let styleClicked = {  };
+        if(type == 'word'){
+            text = this.game.viewWords[index].word;
+            vocabulary = this.game.viewWords[index];
+            // Check if already clicked to apply color style
+            if(this.state.clickedWord != null){
+                if(this.state.clickedWord == index){
+                    clicked = true;
+                    if(this.state.errorMatching){
+                        styleClicked = { backgroundColor:'#bf231e' };
+                    }else if(this.state.successMatching){
+                        styleClicked = { backgroundColor:'#15843a' };
+                    }else{
+                        styleClicked = { backgroundColor:'#bf6c1e' };
+                    }
+                }
+            }
+        }else{
+            text = this.game.viewTranslations[index].translation;
+            vocabulary = this.game.viewTranslations[index];
+            // Check if already clicked to apply color style
+            if(this.state.clickedTranslation != null){
+                if(this.state.clickedTranslation == index){
+                    clicked = true;
+                    if(this.state.errorMatching){
+                        styleClicked = { backgroundColor:'#bf231e' };
+                    }else if(this.state.successMatching){
+                        styleClicked = { backgroundColor:'#15843a' };
+                    }else{
+                        styleClicked = { backgroundColor:'#bf6c1e' };
+                    }
+                }
+            }
+        }
+
+
         return(
-            <View style={[styles.gridRow, { marginBottom:15 }]}>
+            <View key={"row-"+type+'-'+index} style={{ marginBottom:15 }}>
                 <TouchableHighlight
-                    onPress={() => { Alert.alert('ok');} }
+                    onPress={() => { this.checkClickedResult(index, type) } }
                     underlayColor="white"
                     activeOpacity={0.7}
-                    style={{ flex:1, marginRight:5 }}
                     >
-                        <View style={ styles.buttonFullWidth }>
-                            <Text style={styles.buttonText}>Word 1</Text>
-                        </View>
-                </TouchableHighlight>
-                <TouchableHighlight
-                    onPress={() => { Alert.alert('ok');} }
-                    underlayColor="white"
-                    activeOpacity={0.7}
-                    style={{ flex:1, marginLeft:5 }}
-                    >
-                        <View style={ styles.buttonFullWidth }>
-                            <Text style={styles.buttonText}>Word 2</Text>
+                        <View style={[ styles.buttonFullWidth, styleClicked ]}>
+                            <Text style={[styles.buttonText, { fontSize:13, paddingTop:10, paddingBottom:10 }]}>{text}</Text>
                         </View>
                 </TouchableHighlight>
             </View>
         );
     }
 
+    setError()
+    {
+        this.game.locked = false;
+        this.game.errorCount ++;
+        this.setState({
+            clickedWord: null,
+            clickedTranslation: null,
+            successMatching: false,
+            errorMatching: false
+        });
+    }
+
+    setMatch()
+    {
+        this.game.locked = false;
+        this.game.viewWords.splice(this.state.clickedWord, 1);
+        this.game.viewTranslations.splice(this.state.clickedTranslation, 1);
+        this.setState({
+            clickedWord: null,
+            clickedTranslation: null,
+            successMatching: false,
+            errorMatching: false,
+            endGame: this.game.viewWords.length == 0
+        });
+    }
+
+    checkClickedResult(index, type)
+    {
+        if(this.game.locked){
+            return false;
+        }
+
+        if(type == 'word'){
+            // Clicked on word
+            if(this.state.clickedTranslation != null){
+                if(this.game.viewWords[index].id == this.game.viewTranslations[this.state.clickedTranslation].id){
+                    setTimeout(() => { this.setMatch(); }, 500);
+                    this.game.locked = true;
+                    this.setState({clickedWord: index, successMatching:true});
+                }else{
+                    setTimeout(() => { this.setError(); }, 500);
+                    this.game.locked = true;
+                    this.setState({clickedWord: index, errorMatching:true});
+                }
+            }else{
+                this.setState({clickedWord: index});
+            }
+        }else{
+            // Clicked on translation
+            if(this.state.clickedWord != null){
+                // If two sides clicked, apply succes or error with timeout
+                if(this.game.viewTranslations[index].id == this.game.viewWords[this.state.clickedWord].id){
+                    setTimeout(() => { this.setMatch(); }, 500);
+                    this.game.locked = true;
+                    this.setState({clickedTranslation: index, successMatching:true});
+                }else{
+                    setTimeout(() => { this.setError(); }, 500);
+                    this.game.locked = true;
+                    this.setState({clickedTranslation: index, errorMatching:true});
+                }
+            }else{
+                this.setState({clickedTranslation: index});
+            }
+        }
+    }
+
     renderGameView()
     {
-
         return (
             <DrawerLayoutAndroid
                 ref={'DRAWER_REF'}
@@ -205,7 +320,16 @@ class LessonMappingScreen extends React.Component {
                 renderNavigationView={() => this.navigationView}>
                 <View style={styles.containerFull}>
                     <View style={styles.containerBoxed}>
-                        { this.getRowsItems() }
+                        <ScrollView style={{ paddingRight:5 }}>
+                        <View style={styles.gridRow}>
+                            <View style={{ flex:1, marginRight:5 }}>
+                                { this.getColItems('word') }
+                            </View>
+                            <View style={{ flex:1, marginLeft:5 }}>
+                                { this.getColItems('translation') }
+                            </View>
+                        </View>
+                        </ScrollView>
                     </View>
               </View>
             </DrawerLayoutAndroid>
