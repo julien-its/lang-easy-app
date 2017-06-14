@@ -35,7 +35,7 @@ class ButtonListen extends React.Component {
     }
 }
 
-class LessonAndChooseScreen extends React.Component {
+class LessonListenChooseScreen extends React.Component {
 
     static navigationView = null;
 
@@ -456,4 +456,4 @@ class LessonAndChooseScreen extends React.Component {
 
 }
 
-module.exports = LessonAndChooseScreen;
+module.exports = LessonListenChooseScreen;
