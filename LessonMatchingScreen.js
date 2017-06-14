@@ -91,7 +91,32 @@ class LessonMatchingScreen extends React.Component {
 
     replay()
     {
+        this.game = {
+            score: null,
+            vocabularies : this.game.vocabularies,
+            errorCount: 0,
+            viewVocabularies:[],
+            viewWords:[],
+            viewTranslations:[],
+            locked: false
+        };
 
+        this.game.viewWords = this.game.vocabularies.slice(0);
+        this.game.viewTranslations = this.game.vocabularies.slice(0);
+
+        console.log(this.game.viewWords);
+        console.log(this.game.viewWords.length);
+
+        shuffle(this.game.viewWords);
+        shuffle(this.game.viewTranslations);
+
+        this.setState({
+            endGame: false,
+            clickedWord: null,
+            clickedTranslation: null,
+            errorMatching: false,
+            successMatching: false
+        });
     }
 
     render()

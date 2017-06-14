@@ -18,7 +18,7 @@ let LessonMatchingScreen = require('./LessonMatchingScreen.js');
 
 const LangEasyApp = StackNavigator(
     {
-        Home: { screen: LessonsScreen },
+        Home: { screen: LessonMatchingScreen },
         Lessons: { screen: LessonsScreen },
         Lesson: { screen: LessonScreen },
         LessonVocabulary: { screen: LessonVocabularyScreen },
