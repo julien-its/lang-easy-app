@@ -59,8 +59,8 @@ class LessonMatchingScreen extends React.Component {
     fetchData()
     {
         const { params } = this.props.navigation.state;
-        //lessonUrl = Config.API_LESSON_URL.replace("{0}", params.id);
-        lessonUrl = Config.API_LESSON_URL.replace("{0}", 3);
+        lessonUrl = Config.API_LESSON_URL.replace("{0}", params.id);
+        //lessonUrl = Config.API_LESSON_URL.replace("{0}", 3);
         fetch(lessonUrl)
             .then((response) => response.json())
             .then((responseData) => {

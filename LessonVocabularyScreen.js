@@ -148,23 +148,24 @@ class LessonVocabularyScreen extends React.Component {
             }
         );
         download.promise.then(resDownload => {
-            var whoosh = new Sound(downloadDest, '', (error) => {
+            var playerSound = new Sound(downloadDest, '', (error) => {
                 if (error) {
                     console.log('failed to load the sound', error);
                     this.setState({'soundState':'waitingClick'});
                     return;
                 }
                 // loaded successfully
-                console.log('duration in seconds: ' + whoosh.getDuration() + 'number of channels: ' + whoosh.getNumberOfChannels());
+                console.log('duration in seconds: ' + playerSound.getDuration() + 'number of channels: ' + playerSound.getNumberOfChannels());
                 // Play the sound with an onEnd callback
                 this.setState({'soundState':'playing'});
-                whoosh.play((callBackPlay) => {
+                playerSound.play((callBackPlay) => {
                     if (callBackPlay == true) {
                         console.log('successfully finished playing');
                     } else {
                         console.log('playback failed due to audio decoding errors');
                     }
                     this.setState({'soundState':'waitingClick'});
+                    playerSound.release();
                 });
             });
         }).catch(err => {
